@@ -273,8 +273,7 @@ def _update_root(event: dict, **kw):
 def _on_before_submit_prompt(e: dict) -> dict:
     prompt = e.get("prompt", "")
     attachments = e.get("attachments", [])
-    label = (prompt[:100] + "...") if len(prompt) > 100 else prompt
-    _ensure_root(e, name=f"Cursor: {label}",
+    _ensure_root(e, name="Cursor",
                  inputs={"prompt": prompt, "attachments": attachments})
     _child(e, name="User Prompt", run_type="llm", inputs={
         "prompt": prompt, "model": e.get("model", ""),
