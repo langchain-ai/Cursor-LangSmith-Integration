@@ -128,11 +128,33 @@ def _cleanup_turn(gen_id: str):
 _client = None
 
 
+def _redaction_enabled() -> bool:
+    # Secret redaction is on by default; disable with LANGSMITH_REDACT=false|0
+    # (CC_LANGSMITH_REDACT honored too, for a consistent opt-out across plugins).
+    val = (
+        os.environ.get("LANGSMITH_REDACT")
+        or os.environ.get("CC_LANGSMITH_REDACT")
+        or ""
+    ).strip().lower()
+    return val not in ("false", "0")
+
+
 def _get_client():
     global _client
     if _client is None:
         from langsmith import Client
-        _client = Client()
+
+        anonymizer = None
+        if _redaction_enabled():
+            # Strip common secrets from traced data before upload. Guarded so an
+            # older installed langsmith (without the preset) degrades gracefully.
+            try:
+                from langsmith.anonymizer import create_secret_anonymizer
+
+                anonymizer = create_secret_anonymizer()
+            except ImportError:
+                anonymizer = None
+        _client = Client(anonymizer=anonymizer)
     return _client
 
 
