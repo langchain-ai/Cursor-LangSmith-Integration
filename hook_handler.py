@@ -153,8 +153,19 @@ def _get_client():
 
                 anonymizer = create_secret_anonymizer()
             except ImportError:
+                # Don't fail silently: redaction was requested but can't run.
+                print(
+                    "[langsmith-cursor] secret redaction is ENABLED but the installed "
+                    "langsmith lacks create_secret_anonymizer (needs the release that "
+                    "ships the preset); proceeding WITHOUT redaction. Upgrade langsmith "
+                    "to enable it, or set LANGSMITH_REDACT=false to silence this.",
+                    file=sys.stderr,
+                )
                 anonymizer = None
-        _client = Client(anonymizer=anonymizer)
+        # The `anonymizer` arg covers inputs/outputs only; pass it as
+        # hide_metadata too so metadata is redacted as well (no anonymizer
+        # fallback for metadata in the SDK).
+        _client = Client(anonymizer=anonymizer, hide_metadata=anonymizer)
     return _client
 
 
